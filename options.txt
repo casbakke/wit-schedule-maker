@@ -1,0 +1,17 @@
+monday=2025-9-8
+sort=latest_class
+filter_classes_before=600
+filter_classes_after=2200
+
+#####
+
+monday: give the date of the monday that begins the week that you wish to display, if viewing a .csv in a calendar
+format - YYYY-M-D so September 8th, 2025 would be 2025-9-8
+
+sort: gives the direction that the output is sorted. options:
+latest_class_ascending - sort ascending by latest end time of last
+earliest_class - sort descending based on start time of earliest class
+
+filter_classes_before: remove classes beginning before a time.
+filter_classes_after: remove classes ending after a time.
+format - hhmm (24-hour, no colon) so 2:30pm would be 1430

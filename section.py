@@ -14,6 +14,8 @@ class Section:
         self.lab_start = self._safe_int(row_data["Lab Start"])
         self.lab_end = self._safe_int(row_data["Lab End"])
 
+        self.me_group = row_data["ME Group"]
+
     def __str__(self):
         days = ["Mon", "Tue", "Wed", "Thu", "Fri"]
 

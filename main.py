@@ -1,28 +1,31 @@
 import pandas
-import itertools
+import os
 import datetime as dt
 from section import Section
+from coursegroup import CourseGroup
 
-CALENDAR_START_DATE = dt.date(2025, 4, 28)
+# Set Constants
+SECTION_DATA_FILEPATH = "Fall 2025 Sections.xlsx"
+CALENDAR_OUTPUT_FOLDER = "Calendar-Output"
+
+# filters
+with open("options.txt", "r") as file:
+    lines = file.readlines()
+    monday = lines[0].strip().split("=")[1].split("-")
+    CALENDAR_START_DATE = dt.date(int(monday[0]), int(monday[1]), int(monday[2]))
+    SORT_BY = lines[1].strip().split("=")[1]
+    FILTER_CLASSES_BEFORE = int(lines[2].strip().split("=")[1])
+    FILTER_CLASSES_AFTER = int(lines[3].strip().split("=")[1])
 
 def print_combos(combinations):
-    for i in range(len(combinations)):
-        combo = combinations[i]
-        print(f"Combination {i+1}:\n")
-        for j in range(len(combo)):
-            print(str(combo[j]) + "\n")
-        print("\n-#-#-#-#-#-\n")
-
-    print(f"Number of combinations >>> {len(combinations)}")
+    print(format_combos(combinations))
 
 def format_combos(combinations):
     output = "Begin Output\n\n-#-#-#-#-#-\n\n"
 
     for i in range(len(combinations)):
-        combo = combinations[i]
         output += f"Combination {i+1}:\n\n"
-        for j in range(len(combo)):
-            output += f"{str(combo[j])}\n\n"
+        output += str(combinations[i])
         output += "-#-#-#-#-#-\n\n"
 
     output += f"Number of combinations >>> {len(combinations)}"
@@ -30,13 +33,28 @@ def format_combos(combinations):
     return output
 
 def dump_combos(combinations):
-    with open("out.txt", "w") as outfile:
+    timestamp = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    collection_title = f"{timestamp} - {len(combinations)} results"
+
+    # create folder
+    folder = os.path.join(CALENDAR_OUTPUT_FOLDER, collection_title)
+    os.mkdir(folder)
+
+    # dump text file
+    txt_path = os.path.join(folder, "All Possible Combos.txt")
+    with open(txt_path, "w") as outfile:
         outfile.writelines(format_combos(combinations))
         outfile.close()
 
+    # dump csv files
+    for i in range(len(combinations)):
+        calendar_data = combo_to_df(combinations[i])
+        filepath = os.path.join(CALENDAR_OUTPUT_FOLDER, collection_title, f"output{i+1}.csv")
+        calendar_data.to_csv(filepath, index=False)
+
 def generate_combinations(keys, index, current_combo):
     if index == len(keys):
-        possible_combinations.append(current_combo)
+        possible_combinations.append(CourseGroup(current_combo))
     else:
         key = keys[index]
         for item in grouped_courses[key]:
@@ -73,48 +91,42 @@ def combo_to_df(combination):
 
     return pandas.DataFrame.from_dict(output_dict, orient='index', columns=["Subject", "Start Date", "End Date", "Start Time", "End Time"])
 
-
 ### RUNTIME ###
 
 # Load spreadsheet file
-file_path = "Fall 2025 Sections.xlsx"
-data = pandas.read_excel(file_path).to_dict(orient='index')
+data = pandas.read_excel(SECTION_DATA_FILEPATH).to_dict(orient='index')
 
-print(data.keys())
+all_courses_unsorted = [] # list of all available sections
+grouped_courses = {} # dictionary - keys are course titles, with a list of every seciton of that course as the value
+possible_combinations = [] # list of every possible coursegroup, some may have conflicts
+valid_combinations = [] # list of every possible coursegroup with no conflicts
 
-all_courses_unsorted = []
-possible_combinations = []
-valid_combinations = []
-
-# create a list of all sections, containing elements of type Section
+# fill all_courses_unsorted with every section available
 for row_num in data:
-    all_courses_unsorted.append(Section(data[row_num]))
-    
-grouped_courses = {}
+    if data[row_num]["Include"]:
+        all_courses_unsorted.append(Section(data[row_num]))
 
+# fill grouped_courses dict with lists of every section of each course
 for section in all_courses_unsorted:
-    if not section.title in grouped_courses.keys():
-        grouped_courses[section.title] = []
-    grouped_courses[section.title].append(section)
+    if not section.me_group in grouped_courses.keys():
+        grouped_courses[section.me_group] = []
+    grouped_courses[section.me_group].append(section)
 
+# fill possible_combinations with every possible coursegroup, not checking for conflicts
 generate_combinations(list(grouped_courses.keys()), 0, [])
 
-# assertion: possible_combonations contains all of the class combos that exist, but there may be time conflicts
-
-# check for time conflicts in each combo
+# check for time conflicts and filters for each combo
 for combo in possible_combinations:
-    # create a list of every possible pairing of sections
-    pairs_list = list(itertools.combinations(combo, 2))
+    has_conflicts = combo.has_conflicts()
+    satisfies_filters = combo.satisfies_filters(FILTER_CLASSES_BEFORE, FILTER_CLASSES_AFTER)
 
-    # check every pair for time conflicts
-    has_conflicts = any(a.conflict(b) for a, b in pairs_list)
-
-    if not has_conflicts:
+    if (not has_conflicts) and satisfies_filters:
         valid_combinations.append(combo)
 
-dump_combos(valid_combinations)
+sorted_valid_combinations = sorted(valid_combinations, key=lambda combo: combo.latest_end_time)
+
+dump_combos(sorted_valid_combinations)
+
 print(f"Done. {len(valid_combinations)} valid combinations found.")
 
-calendar_data = combo_to_df(valid_combinations[0])
-
-calendar_data.to_csv("output.csv", index=False)
+print(len(all_courses_unsorted))
