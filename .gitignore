@@ -4,4 +4,5 @@
 **/__pycache__
 **/*.env*
 /web-app/node_modules
+/web-app/.npm-cache
 ~*
