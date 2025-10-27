@@ -5,7 +5,7 @@ from section import Section
 from coursegroup import CourseGroup
 
 # Set Constants
-SECTION_DATA_FILEPATH = "Fall 2025 Sections.xlsx"
+SECTION_DATA_FILEPATH = "Spring 2026 Sections.xlsx"
 CALENDAR_OUTPUT_FOLDER = "Calendar-Output"
 
 # filters
@@ -128,5 +128,3 @@ sorted_valid_combinations = sorted(valid_combinations, key=lambda combo: combo.l
 dump_combos(sorted_valid_combinations)
 
 print(f"Done. {len(valid_combinations)} valid combinations found.")
-
-print(len(all_courses_unsorted))
