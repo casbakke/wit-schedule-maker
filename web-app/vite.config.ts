@@ -63,9 +63,10 @@ function localApiPlugin(): Plugin {
 
           // GET /api/run/:name/file/:file -> raw CSV text
           if (url.pathname.startsWith('/api/run/') && url.pathname.includes('/file/')) {
-            const [, , runEnc, , fileEnc] = url.pathname.split('/') // ['', 'api', 'run', '{name}', 'file', '{file}']
-            const runName = decodeURIComponent(runEnc)
-            const fileName = decodeURIComponent(fileEnc || '')
+            // Expected: /api/run/{runName}/file/{fileName}
+            const parts = url.pathname.split('/') // ['', 'api', 'run', '{runName}', 'file', '{fileName}']
+            const runName = decodeURIComponent(parts[3] || '')
+            const fileName = decodeURIComponent(parts[5] || '')
             const filePath = path.join(CALENDAR_BASE, runName, fileName)
             if (!existsSync(filePath)) {
               res.statusCode = 404
