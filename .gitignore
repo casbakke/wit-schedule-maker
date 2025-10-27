@@ -1,3 +1,7 @@
-/Calendar-Output
-Ryan Sections.xlsx
-Tom Fall 25.xlsx
+/Calendar-Output/*
+/Ryan Sections.xlsx
+/Tom Fall 25.xlsx
+**/__pycache__
+**/*.env*
+/web-app/node_modules
+~*
